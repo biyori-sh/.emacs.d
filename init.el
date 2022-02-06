@@ -35,10 +35,10 @@
 
 (leaf server :ensure t :require t
   :when (window-system)
-  :unless (server-running-p)
   :doc "Run the emacs-client server"
   :config
-  (server-start))
+  (unless (server-running-p)
+    (server-start)))
 
 (leaf slime :ensure t
   ;; Install Homebrew for linux
