@@ -594,13 +594,14 @@
   (add-hook 'org-mode-hook 'overriding-minor-mode))
   (leaf diary
     :custom
-    (;; Dropbox のdiary へのパス(起点)
-     ;; Ubuntu ;"~/diary/"
-     ;; (*path-to-diary* . ,(expand-file-name "~/Dropbox/diary-shared/"))
-     ;; WSL2 ;"~/diary/" with a symbolic link "windows-home"
-     ;; (*path-to-diary* . ,(expand-file-name "~/windows-home/Dropbox/diary-shared/"))
-     ;; WSL2 Local ; Dropbox 上だと遅いのでLocal に変更
-     (*path-to-diary* . ,(expand-file-name "~/diary/")))
+    `(;; Dropboxのdiaryへのパス(起点)
+      ;; Ubuntu ;"~/diary/"
+      ;; (*path-to-diary* . ,(expand-file-name "~/Dropbox/diary-shared/"))
+      ;; WSL2 ;"~/diary/" with a symbolic link "windows-home"
+      ;; (*path-to-diary* . ,(expand-file-name "~/windows-home/Dropbox/diary-shared/"))
+      ;; WSL2 Local ; Dropbox上だと遅いのでLocalに変更
+      ;; バックアップ先はOneDriveに変更
+      (*path-to-diary* . ,(expand-file-name "~/diary/")))
     :config
     ;; メモとか記録をする補助コマンド
     (defun open-diary (diary-type)
