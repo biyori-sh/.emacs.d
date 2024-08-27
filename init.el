@@ -1,4 +1,4 @@
-;;; init.el --- My init.el
+;;; init.el --- My init.el -*- lexical-binding: t -*-
 
 ;; ( cd ~/.emacs.d && emacs --batch -f batch-byte-compile init.el )
 
@@ -13,7 +13,7 @@
    'package-archives '(("elpa" . "http://tromey.com/elpa/")
                        ("gnu"   . "https://elpa.gnu.org/packages/")
                        ("melpa" . "https://melpa.org/packages/")
-                       ("org"   . "https://orgmode.org/elpa/")))
+                       ("nongnu" . "https://elpa.nongnu.org/nongnu/")))
   (package-initialize)
   (unless (package-installed-p 'leaf)
     (package-refresh-contents)
@@ -49,7 +49,7 @@
   :preface (load (expand-file-name "~/.roswell/helper.el"))
   :custom ((slime-net-coding-system . 'utf-8-unix))
   :config
-  (slime-setup '(slime-fancy slime-banner slime-company)) ;package-install: slime-company
+  ;; (slime-setup '(slime-fancy slime-banner slime-company)) ;package-install: slime-company
   (add-to-list 'slime-lisp-implementations
                '(sbcl ("ros" "-L" "sbcl-bin" "-Q" "dynamic-space-size=8192" "run"))))
 
@@ -66,49 +66,61 @@
     "Open the init file."
     (interactive)
     (find-file "~/.emacs.d/init.el"))
-  :custom '((user-mail-address . "shimojihiromu@gmail.com")
-            (user-login-name . "biyori-sh")
-            (create-lockfiles . nil)
-            (debug-on-error . t)
-            (init-file-debug . t)
-            (frame-resize-pixelwise . t)
-            (enable-recursive-minibuffers . t)
-            (history-length . 1000)
-            (history-delete-duplicates . t)
-            (scroll-bar-mode . nil)
-            (scroll-preserve-screen-position . t)
-            (scroll-conservatively . 100)
-            (mouse-wheel-scroll-amount . '(1 ((control) . 5)))
-            (ring-bell-function . 'ignore)
-            (text-quoting-style . 'straight)
-            (truncate-lines . nil)
-            ;; (use-dialog-box . nil)
-            ;; (use-file-dialog . nil)
-            (menu-bar-mode . nil)
-            (tool-bar-mode . nil)
-            (indent-tabs-mode . nil)
-            (tab-width . 4)
-            (inhibit-startup-screen . t)
-            (save-place-mode . t)
-            (column-number-mode . t)
-            (line-number-mode . t)
-            (blink-cursor-mode . nil)
-            (size-indication-mode . t)
-            (auto-image-file-mode . t)
-            (show-trailing-whitespace . t)
-            ;; (global-linum-mode . t)     ;display line numbers
-            ;; (setq frame-title-format . "%f")
-            (frame-title-format . "%b %f %& %Z"))
+  :custom ((user-mail-address . "shimojihiromu@gmail.com")
+           (user-login-name . "biyori-sh")
+           (create-lockfiles . nil)
+           (debug-on-error . t)
+           (init-file-debug . t)
+           (frame-resize-pixelwise . t)
+           (enable-recursive-minibuffers . t)
+           (history-length . 1000)
+           (history-delete-duplicates . t)
+           (scroll-bar-mode . nil)
+           (scroll-preserve-screen-position . t)
+           (scroll-conservatively . 100)
+           (mouse-wheel-scroll-amount . '(1 ((control) . 5)))
+           (ring-bell-function . 'ignore)
+           (text-quoting-style . 'straight)
+           (truncate-lines . nil)
+           ;; (use-dialog-box . nil)
+           ;; (use-file-dialog . nil)
+           (menu-bar-mode . nil)
+           (tool-bar-mode . nil)
+           (indent-tabs-mode . nil)
+           (tab-width . 4)
+           (inhibit-startup-screen . t)
+           (save-place-mode . t)
+           (column-number-mode . t)
+           (line-number-mode . t)
+           (blink-cursor-mode . nil)
+           (size-indication-mode . t)
+           (auto-image-file-mode . t)
+           (show-trailing-whitespace . t)
+           ;; (global-linum-mode . t)     ;display line numbers
+           ;; (setq frame-title-format . "%f")
+           (frame-title-format . "%b %f %& %Z"))
   :config
   (defalias 'yes-or-no-p 'y-or-n-p)     ;yes/no -> y/n
   (define-key key-translation-map [?\C-h] [?\C-?]) ;backspace
   (global-set-key (kbd "M-?") 'help-for-help)
   (global-set-key (kbd "C-c l") 'toggle-truncate-lines)
+  ;; (global-set-key (kbd "C-x <SPC>") 'set-mark-command)
+  (dolist (key '("C-@" ;; set-mark-command
+                 ))
+    (global-unset-key (kbd key)))
   ;; save flies +x if it's starts with #!
   (add-hook 'after-save-hook
             'executable-make-buffer-file-executable-if-script-p)
   ;; highlight of current line
   (global-hl-line-mode t)
+  (leaf garbage-collection
+    :custom
+    ;; Increase threshold to fire garbage collection
+    ((gc-cons-threshold . 1073741824)
+     (garbage-collection-messages . t))
+    :config
+    ;; Run GC every 60 seconds if emacs is idle.
+    (run-with-idle-timer 60.0 t #'garbage-collect))
   (leaf autorevert
   :doc "revert buffers when files on disk change"
   :tag "builtin"
@@ -152,21 +164,22 @@
   :doc "Functions for frame, window and buffer."
   :preface
   (progn
-    (defun resize-frame ()
-      "Resize the selected frame."
-      (interactive)
-      (message "please select: l(Left) or r(Right) or a(All of the screen).")
-      (let ((char (read-char-exclusive)))
-        (cond ((= char ?l)
-               (set-frame-position (selected-frame) 8 26)
-               (set-frame-size (selected-frame) 944 988 t))
-              ((= char ?r)
-               (set-frame-position (selected-frame) 952 26)
-               (set-frame-size (selected-frame) 944 988 t))
-              ((= char ?a)
-               (set-frame-position (selected-frame) 8 28)
-               (set-frame-size (selected-frame) 1888 986 t))
-              (t (message "Quit")))))
+    ;; Windows11がフレーム（ウィンドウ）の調整に対応したためコメントアウト
+    ;; (defun resize-frame ()
+    ;;   "Resize the selected frame."
+    ;;   (interactive)
+    ;;   (message "please select: l(Left) or r(Right) or a(All of the screen).")
+    ;;   (let ((char (read-char-exclusive)))
+    ;;     (cond ((= char ?l)
+    ;;            (set-frame-position (selected-frame) 0 0)
+    ;;            (set-frame-size (selected-frame) 932 988 t))
+    ;;           ((= char ?r)
+    ;;            (set-frame-position (selected-frame) 960 0)
+    ;;            (set-frame-size (selected-frame) 932 988 t))
+    ;;           ((= char ?a)
+    ;;            (set-frame-position (selected-frame) 0 0)
+    ;;            (set-frame-size (selected-frame) 1892 988 t))
+    ;;           (t (message "Quit")))))
     (defun prev-window ()
       "Select previous window."
       (interactive)
@@ -194,7 +207,7 @@
                      (throw 'end-flag t))))))))
   :config
   ;; resize the selected frame
-  (global-set-key (kbd "C-c f") 'resize-frame)
+  ;; (global-set-key (kbd "C-c f") 'resize-frame)
   ;; resize the current window
   (global-set-key (kbd "C-c r") 'window-resizer)
   ;;change the current buffer
@@ -203,21 +216,6 @@
   ;; move to the next/previous window
   (global-set-key (kbd "C-'") 'other-window)
   (define-key global-map (kbd "C-\"") 'prev-window))
-
-(leaf clwc
-  :doc "Display the number of lines, words and characters in the region on the mode line."
-  :preface
-  (defun count-lines-words-chars ()
-    "Count lines, words and chars in the region."
-    (if mark-active
-        (format "[l:%d w:%d c:%d]"
-                (count-lines (region-beginning) (region-end))
-                (how-many "\\S-+" (region-beginning) (region-end))
-                (- (region-end) (region-beginning))) ""))
-  :config
-  (let ((ml-elm '(:eval (count-lines-words-chars))))
-    (unless (find ml-elm mode-line-format :test 'equal)
-      (setq-default mode-line-format (cons ml-elm mode-line-format)))))
 
 (leaf jp-env
   :doc "Settings for Japanese environment."
@@ -228,13 +226,15 @@
   (set-terminal-coding-system 'utf-8-unix)
   (prefer-coding-system 'utf-8-unix)
   (set-clipboard-coding-system 'utf-8)
-  (leaf mozc :ensure t :require t
+  (leaf mozc-im :ensure t :require t    ; mozc -> mozc-im
     ;; Input method for Japanese
     ;; "sudo apt install emacs-mozc emacs-mozc-bin"
     :doc "Input method: Mozc."
+    :preface
+    (require 'mozc-popup)               ; "popup" is available in "mozc-candidate-style"
     :custom
-    ((default-input-method . "japanese-mozc")
-     (mozc-candidate-style . 'echo-area)))
+    ((default-input-method . "japanese-mozc-im") ; japanese-mozc -> japanese-mozc-im
+     (mozc-candidate-style . 'popup))) ; overlay, echo-area, popup
   (leaf migemo :ensure t :require t
     ;; "sudo apt install cmigemo elpa-migemo"
     :doc "Provides Japanese increment search."
@@ -253,15 +253,16 @@
   :when (display-graphic-p)             ; -nw or not
   :config
   ;; 半角英字設定
-  (set-face-attribute 'default nil :family "RictyDiminished" :height 150)
+  ;; https://github.com/yuru7/HackGen
+  (set-face-attribute 'default nil :family "HackGen Console NF" :height 200)
   ;; 全角かな設定
   (set-fontset-font (frame-parameter nil 'font)
                     'japanese-jisx0208
-                    (font-spec :family "Meiryo" :height 150))
+                    (font-spec :family "HackGen Console NF" :height 200))
   ;; 半角ｶﾅ設定
   (set-fontset-font (frame-parameter nil 'font)
                     'katakana-jisx0201
-                    (font-spec :family "Meiryo" :height 150)))
+                    (font-spec :family "HackGen Console NF" :height 200)))
 
 (leaf color-theme-modern :ensure t
   :doc "Activate the modern color theme."
@@ -286,12 +287,13 @@
 ;;     :config
 ;;     (smooth-scrolling-mode t)))
 
-
 (leaf undo
   :doc "undo-tree and undo-history"
   :config
   (leaf undo-tree :ensure t :require t
     :doc "Undo tree."
+    :custom
+    ((undo-tree-history-directory-alist . '(("." . "~/.emacs.d/undohist"))))
     :config
     (global-undo-tree-mode))
   (leaf undohist :ensure t :require t
@@ -328,7 +330,7 @@
          ("\\.clo$" . yatex-mode)
          ("\\.bbl$" . yatex-mode))
   :custom
-  ((YaTeX-inhibit-prefix-letter . t)     ;key-bind: "C-c " -> "C-c-"
+  ((YaTeX-inhibit-prefix-letter . t)     ; key-bind: "C-c " -> "C-c-"
    (YaTeX-kanji-code . nil)
    (YaTeX-latex-message-code . 'utf-8)
    (YaTeX-use-LaTeX2e . t)
@@ -342,11 +344,11 @@
    ;; (dvi2-command . "emacsclient")
    ;; (tex-pdfview-command . "emacsclient")
    ;; Evince
-   ;; (dvi2-command . "evince")
-   ;; (tex-pdfview-command . "evince")
+   (dvi2-command . "evince")
+   (tex-pdfview-command . "evince")
    ;; Okular
-   (dvi2-command . "okular --unique")
-   (tex-pdfview-command . "okular --unique")
+   ;; (dvi2-command . "okular --unique")
+   ;; (tex-pdfview-command . "okular --unique")
    ;; properties for RefTeX
    (reftex-enable-partial-scans . t)
    (reftex-save-parse-info . t)
@@ -411,6 +413,9 @@
          ;; uplatex
          ((string-match "uplatex" str)
           (setq tex-command "latexmk -e '$latex=q/uplatex %O -synctex=1 -file-line-error %S/' -e '$bibtex=q/upbibtex %O %B/' -e '$biber=q/biber %O --bblencoding=utf8 -u -U --output_safechars %B/' -e '$makeindex=q/upmendex %O -o %D %S/' -e '$dvipdf=q/dvipdfmx %O -o %D %S/' -norc -pdfdvi"))
+         ;; platex
+         ((string-match "platex" str)
+          (setq tex-command "latexmk -e '$latex=q/platex %O -synctex=1 -file-line-error %S/' -e '$bibtex=q/pbibtex %O %B/' -e '$biber=q/biber %O --bblencoding=utf8 -u -U --output_safechars %B/' -e '$makeindex=q/mendex %O -o %D %S/' -e '$dvipdf=q/dvipdfmx %O -o %D %S/' -norc -pdfdvi"))
          ;; lualatex
          ((string-match "lualatex" str)
           (setq tex-command "latexmk -e '$lualatex=q/lualatex %O -synctex=1 %S/' -e '$bibtex=q/upbibtex %O %B/' -e '$biber=q/biber %O --bblencoding=utf8 -u -U --output_safechars %B/' -e '$makeindex=q/upmendex %O -o %D %S/' -norc -pdflua"))
@@ -460,13 +465,13 @@
             (lambda () (local-set-key "\C-c\C-o"
                                       outline-mode-prefix-map))))
 
-(leaf company :ensure t :require t
-  :doc "A text completion framework for Emacs."
-  :custom
-  ((company-idle-delay . 0.3)
-   (company-minimum-prefix-length . 2))
-  :config
-  (add-hook 'after-init-hook 'global-company-mode))
+;;(leaf company :ensure t :require t
+;;  :doc "A text completion framework for Emacs."
+;;  :custom
+;;  ((company-idle-delay . 0.3)
+;;   (company-minimum-prefix-length . 2))
+;;  :config
+;;  (add-hook 'after-init-hook 'global-company-mode))
 
 (leaf magit :ensure t :require t
   :doc "Magit"
@@ -485,10 +490,27 @@
   (c++-mode-hook . ((c-set-style "bsd")
                     (setq c-basic-offset 4))))
 
+;; (leaf markdown-mode :ensure t :require t
+;;   :doc "Major mode for Markdown."
+;;   :mode (("\\.markdown$" . markdown-mode)
+;;          ("\\.md$" . gfm-mode))
+;;   :config
+;;   (setq markdown-command "pandoc -t html5")
+;;   (setq markdown-preview-stylesheets
+;;         (list "https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/3.0.1/github-markdown.min.css")))
+
 (leaf my-org
   :doc "Settings for org-mode"
   :custom (;; org-mode起動時の折り返し設定 （t：折り返さない、nil：折り返す）
            (org-startup-truncated . nil))
+  :custom-face
+  ((org-meta-line . '((nil (:height 200 :inherit 'font-lock-comment-face))))
+   (org-date . '((nil (:height 200 :foreground "Cyan" :underline t))))
+   (org-table . '((nil (:height 200 :foreground "LightSkyBlue"))))
+   (org-block-begin-line . '((nil (:height 200 :inherit 'font-lock-comment-face))))
+   (org-block . '((nil (:height 200 :inherit 'shadow))))
+   (org-block-end-line . '((nil (:height 200 :inherit 'font-lock-comment-face))))
+   (org-code . '((nil (:height 200 :inherit 'shadow)))))
   :config
   (leaf org-bullets :ensure t :require t
     :doc "Decorate org-mode."
@@ -503,7 +525,7 @@
   (leaf ox-latex :require t
     :doc "LaTeX for org-mode"
     :preface
-    (defun org-mode-reftex-setup ()     ;RefTeX
+    (defun org-mode-reftex-setup ()     ; RefTeX
       (load-library "reftex")
       (and (buffer-file-name)
            (file-exists-p (buffer-file-name))
@@ -531,6 +553,8 @@
                     \\usepackage{color}
                     \\usepackage[usenames,svgnames,psnames]{xcolor}
                     \\usepackage[colorlinks,filecolor=FireBrick,linkcolor=mediumtealblue,urlcolor=blue,citecolor=Ao(English),linktocpage,bookmarksopenlevel=4]{hyperref}
+                    \\usepackage{geometry}
+                    \\geometry{margin=2cm,top=1.8cm,bottom=2.2cm}
                     \\definecolor{MidnightBlue}{rgb}{0.1, 0.1, 0.44}
                     \\definecolor{blue}{rgb}{0.0, 0.0, 1.0}
                     \\definecolor{Ao(English)}{rgb}{0.0, 0.5, 0.0}
@@ -554,7 +578,7 @@
   (define-minor-mode overriding-minor-mode
     "Force to bind keymaps."
     :init-value nil
-    :lighter "oride"
+    :lighter " oride"
     ;; org-modeで使いたいバインドがあれば適宜追加
     :keymap (let ((map (make-sparse-keymap)))
               (define-key map (kbd "C-'") 'other-window)
@@ -570,11 +594,14 @@
   (add-hook 'org-mode-hook 'overriding-minor-mode))
   (leaf diary
     :custom
-    `(;; Dropbox のdiary へのパス(起点)
-      ;; Ubuntu20.04 ;"~/diary/"
-      ;; (*path-to-diary* . ,(expand-file-name "~/Dropbox/diary-shared/"))
-      ;; WSL2 ;"~/diary/"
-      (*path-to-diary* . ,(expand-file-name "~/windows-home/Dropbox/diary-shared/")))
+    (;; Dropboxのdiaryへのパス(起点)
+     ;; Ubuntu ;"~/diary/"
+     ;; (*path-to-diary* . ,(expand-file-name "~/Dropbox/diary-shared/"))
+     ;; WSL2 ;"~/diary/" with a symbolic link "windows-home"
+     ;; (*path-to-diary* . ,(expand-file-name "~/windows-home/Dropbox/diary-shared/"))
+     ;; WSL2 Local ; Dropbox上だと遅いのでLocalに変更
+     ;; バックアップ先はOneDriveに変更
+     (*path-to-diary* . ,(expand-file-name "~/diary/")))
     :config
     ;; メモとか記録をする補助コマンド
     (defun open-diary (diary-type)
@@ -582,10 +609,13 @@
       (interactive "sselect diary type: ")
       ;; template: ("shortcut-key" "message" "path-to-diary-file" "strings-inserted-at-making-file")
       (let* ((diary-alst
-              (list (list "m" "memo"
+              (list (list "c" "current memo"
+                          (concat *path-to-diary* "memo-org/current.org")
+                          nil)
+                    (list "m" "monthly memo log"
                           (concat *path-to-diary* (format-time-string "memo-org/%Y-%m.org" (current-time)))
                           nil)
-                    (list "l" "anime log"
+                    (list "a" "daily anime log"
                           (concat *path-to-diary* (format-time-string "log_anime/%Y-%m-%d.txt" (current-time)))
                           (format-time-string "%m/%d/%Y-%w" (current-time)))))
              (current-diary (assoc diary-type diary-alst)))
@@ -613,13 +643,15 @@
     :doc "Settings for my org-agenda."
     :when (file-exists-p *path-to-diary*)
     :init
-    (defvar org-agenda-files (list (concat *path-to-diary* "memo-org")))
+    ;; アジェンダを確認するファイルとしてmemo-org ディレクトリを走査
+    ;; (setq org-agenda-files (list (concat *path-to-diary* "memo-org")))
+    (setq org-agenda-files (list (concat *path-to-diary* "memo-org/current.org")))
     :custom
     (;; org-captureの参照ファイル （月毎で分ける）
      ;; (org-default-notes-file . ,(concat *path-dropbox-diary* (format-time-string "memo-org/%Y-%m.org")))
      ;; (org-capture-templates . ,(list (list "n" "Note"  (list 'file org-default-notes-file))))
      ;; TODO states
-     ;; (org-todo-keywords . '((sequence "TODO(t)" "WAIT(w)" "REMIND(r)" "|" "DONE(d)" "SOMEDAY(s)")))
+     (org-todo-keywords . '((sequence "TODO(t)" "WAIT(w)" "REMIND(r)" "SOMEDAY(s)" "|" "DONE(d)" "CANCEL(c)")))
      ;; Tag list
      (org-tag-alist . '(("meeting" . ?m)
                         ("office" . ?o)
@@ -630,23 +662,50 @@
     :config
     (global-set-key (kbd "C-c a") 'org-agenda)
     ;; (global-set-key (kbd "C-c c") 'org-capture)
+    ;; アジェンダ使用でファイルを開きっぱなしにしない
+    (require 'dash)
+    (defun my-org-keep-quiet (orig-fun &rest args)
+      (let ((buffers-pre (-filter #'get-file-buffer (org-agenda-files))))
+        (apply orig-fun args)
+        (let* ((buffers-post (-filter #'get-file-buffer (org-agenda-files)))
+               (buffers-new  (-difference buffers-post buffers-pre)))
+          (mapcar (lambda (file) (kill-buffer (get-file-buffer file))) buffers-new))))
+    (advice-add 'org-agenda-list :around #'my-org-keep-quiet)
+    (advice-add 'org-todo-list :around #'my-org-keep-quiet)
+    (advice-add 'org-search-view :around #'my-org-keep-quiet)
+    (advice-add 'org-tags-view   :around #'my-org-keep-quiet)
     ;; アジェンダ表示で下線を用いる
     (add-hook 'org-agenda-mode-hook '(lambda () (hl-line-mode 1)))))
 
-(leaf imaxima
-  :doc "Settings for imaxima"
-  ;; "sudo apt install maxima maxima-emacs"で/usr/share/emacs/site-lisp/maxima/に
-  ;; インストールされる諸々の設定ファイルの中で、imaxima.elとimath.elとを以下のWebページから
-  ;; インストールできるものに置き換えて、mylatex.ltx.elを追加する。
-  ;; https://bugs.launchpad.net/ubuntu/+source/maxima/+bug/1877185
-  ;; apt以外で入れたTeX Live 2020とのバージョンのズレによるバグらしい。
-  ;; TeX Live 2021とのバージョンのズレにも対応できた (2022/02/05)。
-  ;; ファイルは"~/.emacs.d/my-archive/for-imaxima/"に保存。
+(leaf clwc
+  :doc "Display the number of lines, words and characters in the region on the mode line."
   :preface
-  (add-to-list 'exec-path "/usr/local/texlive/2021/bin/x86_64-linux/")
-  :custom
-  ((imaxima-fnt-size . "LARGE")
-   (imaxima-use-maxima-mode-flag . t)))
+  (defun count-lines-words-chars ()
+    "Count lines, words and chars in the region."
+    (if mark-active
+        (format "[l:%d w:%d c:%d]"
+                (count-lines (region-beginning) (region-end))
+                (how-many "\\S-+" (region-beginning) (region-end))
+                (- (region-end) (region-beginning))) ""))
+  :config
+  (let ((ml-elm '(:eval (count-lines-words-chars))))
+    (unless (find ml-elm mode-line-format :test 'equal)
+      (setq-default mode-line-format (cons ml-elm mode-line-format)))))
+
+;;(leaf imaxima
+;;  :doc "Settings for imaxima"
+;;  ;; "sudo apt install maxima maxima-emacs"で/usr/share/emacs/site-lisp/maxima/に
+;;  ;; インストールされる諸々の設定ファイルの中で、imaxima.elとimath.elとを以下のWebページから
+;;  ;; インストールできるものに置き換えて、mylatex.ltx.elを追加する。
+;;  ;; https://bugs.launchpad.net/ubuntu/+source/maxima/+bug/1877185
+;;  ;; apt以外で入れたTeX Live 2020とのバージョンのズレによるバグらしい。
+;;  ;; TeX Live 2021とのバージョンのズレにも対応できた (2022/02/05)。
+;;  ;; ファイルは"~/.emacs.d/my-archive/for-imaxima/"に保存。
+;;  :preface
+;;  (add-to-list 'exec-path "/usr/local/texlive/2021/bin/x86_64-linux/")
+;;  :custom
+;;  ((imaxima-fnt-size . "LARGE")
+;;   (imaxima-use-maxima-mode-flag . t)))
 
 ;; (leaf pdf-tools :ensure t
 ;;   :preface
